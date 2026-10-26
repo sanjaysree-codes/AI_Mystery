@@ -1,0 +1,20 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { env } from './config/env.js';
+import { sessionMiddleware, requireSession } from './middleware/session.js';
+import { apiRateLimit } from './middleware/rateLimiter.js';
+import mysteryRoutes from './routes/mystery.routes.js';
+import { errorHandler, notFound } from './middleware/errors.js';
+
+const app = express();
+app.set('trust proxy', 1);
+app.use(helmet());
+app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
+app.use(express.json({ limit: '32kb' }));
+app.use(sessionMiddleware);
+app.get('/api/v1/health', (_req, res) => res.json({ success: true, data: { status: 'ok', service: 'ai-mystery-room' } }));
+app.use('/api/v1/mysteries', requireSession, apiRateLimit, mysteryRoutes);
+app.use(notFound);
+app.use(errorHandler);
+export default app;
